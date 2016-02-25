@@ -10,15 +10,20 @@ import (
 	"os"
 )
 
+var Server string
+
 func main() {
 
-	ff := flag.String("f", "", "Folder or File to be compressed")
-	fileName := flag.String("o", "zipped.zip", "Output zip name")
+	Server = "http://localhost:8888"
+	var file string
+	var fileName string
+	flag.StringVar(&file, "f", "", "Folder or File to be compressed")
+	flag.StringVar(&fileName, "o", "zipped.zip", "Output zip name")
 	flag.Parse()
 
-	Zipit(*ff, *fileName)
+	Zipit(file, fileName)
 
-	response, err := sendPost(*fileName)
+	response, err := sendPost(fileName)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -58,12 +63,12 @@ func sendPost(path string) (*http.Response, error) {
 		return nil, err
 	}
 
-	r, err := http.NewRequest("POST", "http://localhost:8888/upload", body)
+	r, err := http.NewRequest("POST", Server+"/upload/", body)
 	if err != nil {
 		return nil, err
 	}
 	r.Header.Set("Content-Type", writer.FormDataContentType())
-	//r.Header.Set("Authorization", "123")
+	r.Header.Set("Authorization", "Basic YWRtaW46MTIz")
 	client := &http.Client{}
 	response, err := client.Do(r)
 	return response, err
