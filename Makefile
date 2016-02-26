@@ -1,6 +1,6 @@
 
 APP_NAME=ds-client
-DEBUG_APP_NAME=ds-server-debug
+DEBUG_APP_NAME=ds-client-debug
 
 .PHONY: clean
 clean:

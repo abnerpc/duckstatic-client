@@ -18,12 +18,16 @@ func main() {
 	var file string
 	var fileName string
 	flag.StringVar(&file, "f", "", "Folder or File to be compressed")
-	flag.StringVar(&fileName, "o", "zipped.zip", "Output zip name")
+	flag.StringVar(&fileName, "o", "", "Output static folder or file")
 	flag.Parse()
 
-	Zipit(file, fileName)
+	err := Zipit(file, fileName)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-	response, err := sendPost(fileName)
+	response, err := sendPost(ZipFileName)
 	if err != nil {
 		fmt.Println(err)
 		return
