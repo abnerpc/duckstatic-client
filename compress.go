@@ -8,8 +8,11 @@ import (
 	"strings"
 )
 
+// ZipFileName holds the default zipped filename
 const ZipFileName = "static.zip"
 
+// Zipit compress the content of source path in a zipped file
+// The target parameter is used as the name for the first folder or file
 func Zipit(source, target string) error {
 
 	zipfile, err := os.Create(ZipFileName)
@@ -27,7 +30,7 @@ func Zipit(source, target string) error {
 	}
 
 	var baseDir string
-	var oneFile bool = false
+	var oneFile = false
 	if info.IsDir() {
 		if target != "" {
 			baseDir = target

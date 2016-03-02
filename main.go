@@ -5,16 +5,28 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
+	"os/user"
 )
 
-var Server string
+func init() {
+	// load config
+	currentUser, err := user.Current()
+	if err != nil {
+		log.Fatal("Unexpected error!")
+		return
+	}
+	if err := LoadConfigurationFrom(currentUser.HomeDir); err != nil {
+		log.Fatal("Error loading the configuration file")
+		return
+	}
+}
 
 func main() {
 
-	Server = "http://localhost:8888"
 	var file string
 	var fileName string
 	flag.StringVar(&file, "f", "", "Folder or File to be compressed")
@@ -67,7 +79,7 @@ func sendPost(path string) (*http.Response, error) {
 		return nil, err
 	}
 
-	r, err := http.NewRequest("POST", Server+"/upload/", body)
+	r, err := http.NewRequest("POST", Config.ServerURL+"/upload/", body)
 	if err != nil {
 		return nil, err
 	}
