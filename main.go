@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -13,27 +14,76 @@ import (
 )
 
 func init() {
-	// load config
-	currentUser, err := user.Current()
+	var err error
+	CurrentUser, err = user.Current()
 	if err != nil {
 		log.Fatal("Unexpected error!")
 		return
 	}
-	if err := LoadConfigurationFrom(currentUser.HomeDir); err != nil {
-		log.Fatal("Error loading the configuration file")
-		return
-	}
+}
+
+// See 2 (end of page 4) http://www.ietf.org/rfc/rfc2617.txt
+// "To receive authorization, the client sends the userid and password,
+// separated by a single colon (":") character, within a base64
+// encoded string in the credentials."
+// It is not meant to be urlencoded.
+func basicAuth(username, password string) string {
+	auth := username + ":" + password
+	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
 func main() {
 
-	var file string
-	var fileName string
-	flag.StringVar(&file, "f", "", "Folder or File to be compressed")
-	flag.StringVar(&fileName, "o", "", "Output static folder or file")
+	var (
+		setServer      bool
+		setUser        bool
+		addUser        bool
+		changePassword bool
+		deleteUser     bool
+		upload         string
+		withName       string
+	)
+
+	flag.BoolVar(&setServer, "setserver", false, "Server URL")
+	flag.BoolVar(&setUser, "setuser", false, "User and Password")
+	flag.BoolVar(&addUser, "adduser", false, "Add new user")
+	flag.BoolVar(&changePassword, "changepassword", false, "Change user password")
+	flag.BoolVar(&deleteUser, "deleteuser", false, "Delete user")
+
+	flag.StringVar(&upload, "upload", "", "Folder or File to be uploaded")
+	flag.StringVar(&withName, "withname", "", "Custom name to store")
 	flag.Parse()
 
-	err := Zipit(file, fileName)
+	if err := LoadConfiguration(); err != nil {
+		log.Fatal("Error to load or write config file!")
+		return
+	}
+
+	if setServer {
+		newServer := flag.Args()[0]
+		if newServer == "" {
+			log.Fatal("Please, provide a valid server url")
+			return
+		}
+		Config.ServerURL = newServer
+		WriteConfiguration()
+		log.Println("Server OK")
+		return
+	}
+	// if !*configMode || *server == "" || *userName == "" || *userPassword == "" {
+	// 		log.Fatal("Error loading the configuration file.")
+	// 		return
+	// 	}
+	// 	Config = &Configuration{}
+	// 	Config.ServerURL = *server
+	// 	if *userName != "" && *userPassword != "" {
+	// 		Config.AccessKey = basicAuth(*userName, *userPassword)
+	// 	}
+	// 	WriteConfiguration(CurrentUser.HomeDir)
+	// 	return
+	// }
+
+	err := Zipit(upload, withName)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -41,7 +91,7 @@ func main() {
 
 	response, err := sendPost(ZipFileName)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -84,7 +134,7 @@ func sendPost(path string) (*http.Response, error) {
 		return nil, err
 	}
 	r.Header.Set("Content-Type", writer.FormDataContentType())
-	r.Header.Set("Authorization", "Basic YWRtaW46MTIz")
+	r.Header.Set("Authorization", "Basic "+Config.AccessKey)
 	client := &http.Client{}
 	response, err := client.Do(r)
 	return response, err
